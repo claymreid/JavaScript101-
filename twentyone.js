@@ -1,14 +1,7 @@
 
 
-const DECK = [['H', '2'], ['H', '3'], ['H', '4'], ['H', '5']
-  , ['H', '6'], ['H', '7'], ['H', '8'], ['H', '9'], ['H', '10'], ['H', 'J']
-  , ['H', 'Q'], ['H', 'K'], ['H', 'A'], ['S', '2'], ['S', '3'], ['S', '4']
-  , ['S', '5'], ['S', '6'], ['S', '7'], ['S', '8'], ['S', '9'], ['S', '10']
-  , ['S', 'J'], ['S', 'Q'], ['S', 'K'], ['S', 'A'], ['D', '2'], ['D', '3']
-  , ['D', '4'], ['D', '5'], ['D', '6'], ['D', '7'], ['D', '8'], ['D', '9']
-  , ['D', '10'], ['D', 'J'], ['D', 'Q'], ['D', 'K'], ['D', 'A'], ['C', '2']
-  , ['C', '3'], ['C', '4'], ['C', '5'], ['C', '6'], ['C', '7'], ['C', '8']
-  , ['C', '9'], ['C', '10'], ['C', 'J'], ['C', 'Q'], ['C', 'K'], ['C', 'A']];
+const SUITS = ['H', 'D', 'S', 'C'];
+const VALUES = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A'];
 
 const ROUNDS_TO_WIN = 5;
 const DEALER_STAYS = 17;
@@ -16,23 +9,39 @@ const BEST_SCORE = 21;
 
 let input = require("readline-sync");
 
+let playerTurn;
 
 function prompt(msg) {
   console.log(`==> ${msg}`);
 }
 
 function shuffle(array) {
-  for (let index = array.length - 1; index > 0; index--) {
-    let otherIndex = Math.floor(Math.random() * (index + 1)); // 0 to index
-    [array[index], array[otherIndex]] = [array[otherIndex], array[index]]; // swap elements
+  for (let first = array.length - 1; first > 0; first--) {
+    let second = Math.floor(Math.random() * (first + 1)); // random index from 0 to 'first'
+    [array[first], array[second]] = [array[second], array[first]]; // swap elements
   }
+
   return array;
 }
 
-function deal(deck) {
-  return [deck.pop(), deck.pop()];
+function deal() {
+  let deck = [];
+
+  for (let suitIndex = 0; suitIndex < SUITS.length; suitIndex++) {
+    let suit = SUITS[suitIndex];
+
+    for (let valueIndex = 0; valueIndex < VALUES.length; valueIndex++) {
+      let value = VALUES[valueIndex];
+      deck.push([suit, value]);
+    }
+  }
+
+  return shuffle(deck);
 }
 
+function takeTwoFromDeck(deck) {
+  return [deck.pop(), deck.pop()];
+}
 
 function total(cards) {
   let values = cards.map(card => card[1]);
@@ -166,21 +175,34 @@ function displayCards(participantCards, participant, total, allCards) {
   }
 }
 
+function playerTurnActive() {
+
+  while (true) {
+    prompt("Player's turn.");
+    prompt("Hit or stay?");
+    playerTurn = input.question().toLowerCase();
+    if (['h', 's'].includes(playerTurn)) break;
+    prompt("Invalid option. Please enter 'h' or 's'.");
+  }
+}
+
 while (true) {
   let score  = { player: 0, dealer: 0 };
+
 
   while (true) {
     console.clear();
     console.log('_____________________');
     prompt("Welcome to Twenty One!");
 
+    let cards = deal();
+
     let playerCards = [];
     let dealerCards = [];
-    let cards = shuffle(DECK);
 
-    playerCards.push(...deal(cards));
-    dealerCards.push(...deal(cards));
-    DECK.splice(0, 4);
+    playerCards.push(...takeTwoFromDeck(cards));
+    dealerCards.push(...takeTwoFromDeck(cards));
+
 
     let playerTotal = total(playerCards);
     let dealerTotal = total(dealerCards);
@@ -188,21 +210,15 @@ while (true) {
     displayCards(dealerCards, 'dealer');
     displayCards(playerCards, 'player', playerTotal);
 
-    while (true) {
-      let playerTurn;
+    console.log(cards);
 
-      while (true) {
-        prompt("Player's turn.");
-        prompt("Hit or stay?");
-        playerTurn = input.question().toLowerCase();
-        if (['h', 's'].includes(playerTurn)) break;
-        prompt("Invalid option. Please enter 'h' or 's'.");
-      }
+    while (true) {
+
+      playerTurnActive();
 
       if (playerTurn === 'h') {
         playerCards.push(cards.pop());
         playerTotal = total(playerCards);
-        DECK.splice(0, 1);
         prompt('You chose hit!');
         displayCards(playerCards, 'player', playerTotal);
       }
@@ -230,7 +246,6 @@ while (true) {
     while (dealerTotal < DEALER_STAYS) {
       prompt('Dealer hits!');
       dealerCards.push(cards.pop());
-      DECK.splice(0, 1);
       dealerTotal = total(dealerCards);
     }
 
